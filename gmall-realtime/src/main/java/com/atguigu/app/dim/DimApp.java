@@ -2,24 +2,23 @@ package com.atguigu.app.dim;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.atguigu.app.func.TableProcessFunction;
+import com.atguigu.bean.TableProcess;
 import com.atguigu.utils.MyKafkaUtil;
 import com.ververica.cdc.connectors.mysql.source.MySqlSource;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
 import com.ververica.cdc.debezium.JsonDebeziumDeserializationSchema;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
-import org.apache.flink.runtime.state.hashmap.HashMapStateBackend;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
+import org.apache.flink.api.common.state.MapStateDescriptor;
+import org.apache.flink.streaming.api.datastream.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 
 public class DimApp {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
         //TODO 1.获取执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -39,7 +38,6 @@ public class DimApp {
         SingleOutputStreamOperator<JSONObject> jsonObjDS = kafkaDS.process(new ProcessFunction<String, JSONObject>() {
             @Override
             public void processElement(String s, Context context, Collector<JSONObject> collector) throws Exception {
-
                 try {
                     JSONObject jsonObject = JSON.parseObject(s);
                     collector.collect(jsonObject);
@@ -67,14 +65,20 @@ public class DimApp {
         DataStreamSource<String> mysqlSourceDS = env.fromSource(mySqlSource, WatermarkStrategy.noWatermarks(), "MysqlSource");
 
         //TODO 5.将配置信息流处理成广播流
+        MapStateDescriptor<String, TableProcess> mapStateDescriptor = new MapStateDescriptor<>("map-state", String.class, TableProcess.class);
+        BroadcastStream<String> broadcastStream = mysqlSourceDS.broadcast(mapStateDescriptor);
 
         //TODO 6.连接主流与广播流
+        BroadcastConnectedStream<JSONObject, String> connectedStream = jsonObjDS.connect(broadcastStream);
 
         //TODO 7.根据广播流数据处理主流数据
+        SingleOutputStreamOperator<JSONObject> hbaseDS = connectedStream.process(new TableProcessFunction(mapStateDescriptor));
 
         //TODO 8.将数据写出到Phoenix中
+        hbaseDS.print(">>>>>>>>>>>>>");
 
         //TODO 9.启动任务
+        env.execute("DimApp");
 
     }
 

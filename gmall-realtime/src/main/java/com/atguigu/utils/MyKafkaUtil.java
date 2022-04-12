@@ -16,6 +16,7 @@ public class MyKafkaUtil {
     public static FlinkKafkaConsumer<String> getKafkaConsumer(String topic, String group_id) {
 
         Properties properties = new Properties();
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "hadoop102:9092");
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, group_id);
 
         return new FlinkKafkaConsumer<String>(topic,
