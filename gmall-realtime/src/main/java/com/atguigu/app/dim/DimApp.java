@@ -2,6 +2,7 @@ package com.atguigu.app.dim;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.atguigu.app.func.DimSinkFunction;
 import com.atguigu.app.func.TableProcessFunction;
 import com.atguigu.bean.TableProcess;
 import com.atguigu.utils.MyKafkaUtil;
@@ -16,6 +17,8 @@ import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 
+//数据流：web/app -> Nginx -> 业务服务器 -> Mysql(Binlog) -> Maxwell -> Kafka(ODS) -> FlinkApp -> Phoenix(DIM)
+//程  序：    Mock -> Mysql(Binlog) -> maxwell.sh -> Kafka(ZK) -> DimApp -> Phoenix(HBase HDFS/ZK)
 public class DimApp {
 
     public static void main(String[] args) throws Exception {
@@ -76,6 +79,7 @@ public class DimApp {
 
         //TODO 8.将数据写出到Phoenix中
         hbaseDS.print(">>>>>>>>>>>>>");
+        hbaseDS.addSink(new DimSinkFunction());
 
         //TODO 9.启动任务
         env.execute("DimApp");
