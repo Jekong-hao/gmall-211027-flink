@@ -15,8 +15,10 @@ import java.util.Properties;
 public class MyKafkaUtil {
 
     private static Properties properties = new Properties();
+    private static final String BOOTSTRAP_SERVERS = "hadoop102:9092";
+
     static {
-        properties.setProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, "hadoop102:9092");
+        properties.setProperty(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
     }
 
     public static FlinkKafkaConsumer<String> getKafkaConsumer(String topic, String group_id) {
@@ -52,5 +54,33 @@ public class MyKafkaUtil {
                 new SimpleStringSchema(),
                 properties);
     }
+
+    /**
+     * Kafka-Source DDL 语句
+     *
+     * @param topic   数据源主题
+     * @param groupId 消费者组
+     * @return 拼接好的 Kafka 数据源 DDL 语句
+     */
+    public static String getKafkaDDL(String topic, String groupId) {
+        return " with ('connector' = 'kafka', " +
+                " 'topic' = '" + topic + "'," +
+                " 'properties.bootstrap.servers' = '" + BOOTSTRAP_SERVERS + "', " +
+                " 'properties.group.id' = '" + groupId + "', " +
+                " 'format' = 'json', " +
+                " 'scan.startup.mode' = 'latest-offset')";
+    }
+
+    public static String getTopicDbDDL(String groupId) {
+        return "CREATE TABLE topic_db ( " +
+                "  `database` String, " +
+                "  `table` String, " +
+                "  `type` String, " +
+                "  `data` Map<String,String>, " +
+                "  `old` Map<String,String>, " +
+                "  `pt` AS PROCTIME() " +
+                ")" + MyKafkaUtil.getKafkaDDL("topic_db", groupId);
+    }
+
 
 }
