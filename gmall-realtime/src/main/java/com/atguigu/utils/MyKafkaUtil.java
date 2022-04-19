@@ -88,7 +88,6 @@ public class MyKafkaUtil {
                 ")";
     }
 
-
     public static String getTopicDbDDL(String groupId) {
         return "CREATE TABLE topic_db ( " +
                 "  `database` String, " +
