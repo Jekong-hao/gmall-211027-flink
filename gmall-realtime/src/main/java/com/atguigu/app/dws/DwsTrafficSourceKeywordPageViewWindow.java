@@ -2,7 +2,9 @@ package com.atguigu.app.dws;
 
 import com.atguigu.app.func.SplitFunction;
 import com.atguigu.bean.KeywordBean;
+import com.atguigu.utils.MyClickHouseUtil;
 import com.atguigu.utils.MyKafkaUtil;
+import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
@@ -83,6 +85,7 @@ public class DwsTrafficSourceKeywordPageViewWindow {
         keywordBeanDataStream.print(">>>>>>>>>>");
 
         //TODO 7.将数据写出到ClickHouse
+        keywordBeanDataStream.addSink(MyClickHouseUtil.getClickHouseSink("insert into dws_traffic_source_keyword_page_view_window values(?,?,?,?,?,?)"));
 
         //TODO 8.启动任务
         env.execute("DwsTrafficSourceKeywordPageViewWindow");
