@@ -115,7 +115,7 @@ public class DwsTrafficVcChArIsNewPageViewWindow {
         SingleOutputStreamOperator<TrafficPageViewBean> unionDS = trafficPageViewWithPvDS.union(
                 trafficPageViewWithUjDS,
                 trafficPageViewWithUvDS)
-                .assignTimestampsAndWatermarks(WatermarkStrategy.<TrafficPageViewBean>forBoundedOutOfOrderness(Duration.ofSeconds(2)).withTimestampAssigner(new SerializableTimestampAssigner<TrafficPageViewBean>() {
+                .assignTimestampsAndWatermarks(WatermarkStrategy.<TrafficPageViewBean>forBoundedOutOfOrderness(Duration.ofSeconds(13)).withTimestampAssigner(new SerializableTimestampAssigner<TrafficPageViewBean>() {
                     @Override
                     public long extractTimestamp(TrafficPageViewBean element, long recordTimestamp) {
                         return element.getTs();
