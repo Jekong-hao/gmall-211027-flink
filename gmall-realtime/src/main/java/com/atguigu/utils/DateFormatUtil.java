@@ -12,17 +12,18 @@ public class DateFormatUtil {
     private static final DateTimeFormatter dtfFull = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static Long toTs(String dtStr, boolean isFull) {
+
         LocalDateTime localDateTime = null;
         if (isFull) {
-            localDateTime = LocalDateTime.parse(dtStr, dtfFull);
-        } else {
-            localDateTime = LocalDateTime.parse(dtStr, dtf);
+            dtStr = dtStr + " 00:00:00";
         }
+        localDateTime = LocalDateTime.parse(dtStr, dtfFull);
+
         return localDateTime.toInstant(ZoneOffset.of("+8")).toEpochMilli();
     }
 
     public static Long toTs(String dtStr) {
-        return toTs(dtStr, false);
+        return toTs(dtStr, true);
     }
 
     public static String toDate(Long ts) {
@@ -38,6 +39,6 @@ public class DateFormatUtil {
     }
 
     public static void main(String[] args) {
-        System.out.println(toYmdHms(System.currentTimeMillis()));
+        System.out.println(toYmdHms(1650702276000L));
     }
 }
