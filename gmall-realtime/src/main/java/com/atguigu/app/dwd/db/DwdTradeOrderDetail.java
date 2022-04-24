@@ -177,7 +177,8 @@ public class DwdTradeOrderDetail {
                 "    oc.coupon_id, " +
                 "    oc.coupon_use_id, " +
                 "    oc.create_time coupon_create_time, " +
-                "    dic.dic_name " +
+                "    dic.dic_name, " +
+                "    current_row_timestamp() ts " +
                 "from order_detail od " +
                 "join order_info oi " +
                 "on od.order_id = oi.id " +
@@ -238,6 +239,7 @@ public class DwdTradeOrderDetail {
                 "    `coupon_use_id` string, " +
                 "    `coupon_create_time` string , " +
                 "    `dic_name` string, " +
+                "    `ts` TIMESTAMP_LTZ(3), " +
                 "    PRIMARY KEY (order_detail_id) NOT ENFORCED " +
                 ")" + MyKafkaUtil.getUpsertKafkaDDL("dwd_trade_order_detail"));
 

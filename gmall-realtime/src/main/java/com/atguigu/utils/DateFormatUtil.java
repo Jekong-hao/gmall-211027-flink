@@ -14,7 +14,7 @@ public class DateFormatUtil {
     public static Long toTs(String dtStr, boolean isFull) {
 
         LocalDateTime localDateTime = null;
-        if (isFull) {
+        if (!isFull) {
             dtStr = dtStr + " 00:00:00";
         }
         localDateTime = LocalDateTime.parse(dtStr, dtfFull);
@@ -23,7 +23,7 @@ public class DateFormatUtil {
     }
 
     public static Long toTs(String dtStr) {
-        return toTs(dtStr, true);
+        return toTs(dtStr, false);
     }
 
     public static String toDate(Long ts) {
