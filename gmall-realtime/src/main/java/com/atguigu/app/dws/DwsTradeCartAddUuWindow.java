@@ -53,7 +53,7 @@ public class DwsTradeCartAddUuWindow {
 
         //TODO 2.读取Kafka DWD层加购数据主题 创建流
         String topic = "dwd_trade_cart_add";
-        String groupId = "dws_trade_cart_add_uu_window_1027";
+        String groupId = "dws_trade_cart_add_uu_window_211027";
         DataStreamSource<String> cartAddStringDS = env.addSource(MyKafkaUtil.getKafkaConsumer(topic, groupId));
 
         //TODO 3.将每行数据转换为JSON格式
@@ -64,8 +64,11 @@ public class DwsTradeCartAddUuWindow {
             @Override
             public long extractTimestamp(JSONObject element, long recordTimestamp) {
                 //yyyy-MM-dd HH:mm:ss
-                String createTime = element.getString("create_time");
-                return DateFormatUtil.toTs(createTime, true);
+                String dateTime = element.getString("operate_time");
+                if (dateTime == null) {
+                    dateTime = element.getString("create_time");
+                }
+                return DateFormatUtil.toTs(dateTime, true);
             }
         }));
 
@@ -94,8 +97,11 @@ public class DwsTradeCartAddUuWindow {
                 //提取状态数据
                 String lastDt = lastCartAddDt.value();
                 //yyyy-MM-dd HH:mm:ss
-                String createTime = value.getString("create_time");
-                String curDt = createTime.split(" ")[0];
+                String dateTime = value.getString("operate_time");
+                if (dateTime == null) {
+                    dateTime = value.getString("create_time");
+                }
+                String curDt = dateTime.split(" ")[0];
 
                 //如果状态数据为null或者与当前日期不是同一天,则保留数据,更新状态
                 if (lastDt == null || !lastDt.equals(curDt)) {

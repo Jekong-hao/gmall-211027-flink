@@ -2,6 +2,7 @@ package com.atguigu.app.dws;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.atguigu.app.func.OrderDetailFilterFunction;
 import com.atguigu.bean.TradeOrderBean;
 import com.atguigu.utils.DateFormatUtil;
 import com.atguigu.utils.MyClickHouseUtil;
@@ -54,68 +55,8 @@ public class DwsTradeOrderWindow {
 //        System.setProperty("HADOOP_USER_NAME", "atguigu");
 
         //TODO 2.读取Kafka DWD层 订单明细主题数据
-        String topic = "dwd_trade_order_detail";
         String groupId = "dws_trade_order_window_1027";
-
-        DataStreamSource<String> orderDetailStrDS = env.addSource(MyKafkaUtil.getKafkaConsumer(topic, groupId));
-
-        //TODO 3.过滤(""不需要,保留"insert")&转换数据为JSON格式
-        SingleOutputStreamOperator<JSONObject> jsonObjDS = orderDetailStrDS.flatMap(new FlatMapFunction<String, JSONObject>() {
-            @Override
-            public void flatMap(String value, Collector<JSONObject> out) throws Exception {
-                if (!"".equals(value)) {
-                    JSONObject jsonObject = JSON.parseObject(value);
-                    if ("insert".equals(jsonObject.getString("type"))) {
-                        out.collect(jsonObject);
-                    }
-                }
-            }
-        });
-
-        //TODO 4.按照order_detail_id分组
-        KeyedStream<JSONObject, String> keyedByOrderDetailIdStream = jsonObjDS.keyBy(json -> json.getString("order_detail_id"));
-
-        //TODO 5.去重
-        SingleOutputStreamOperator<JSONObject> orderDetailJsonObjDS = keyedByOrderDetailIdStream.process(new KeyedProcessFunction<String, JSONObject, JSONObject>() {
-            private ValueState<JSONObject> orderDetailState;
-
-            @Override
-            public void open(Configuration parameters) throws Exception {
-                orderDetailState = getRuntimeContext().getState(new ValueStateDescriptor<JSONObject>("order-detail", JSONObject.class));
-            }
-
-            @Override
-            public void processElement(JSONObject value, Context ctx, Collector<JSONObject> out) throws Exception {
-
-                //获取状态数据并判断是否有数据
-                JSONObject orderDetail = orderDetailState.value();
-
-                if (orderDetail == null) {
-                    //把当前数据设置进状态并且注册定时器
-                    orderDetailState.update(value);
-                    ctx.timerService().registerProcessingTimeTimer(ctx.timerService().currentProcessingTime() + 2000L);
-                } else {
-
-                    //2022-04-01 11:10:55.042Z
-                    String stateTs = orderDetail.getString("ts");
-                    //2022-04-01 11:10:55.9Z
-                    String curTs = value.getString("ts");
-
-                    int compare = TimestampLtz3CompareUtil.compare(stateTs, curTs);
-                    if (compare != 1) {  //表示后到的数据时间大
-                        //更新状态
-                        orderDetailState.update(value);
-                    }
-                }
-            }
-
-            @Override
-            public void onTimer(long timestamp, OnTimerContext ctx, Collector<JSONObject> out) throws Exception {
-                //提取状态数据并输出
-                JSONObject orderDetail = orderDetailState.value();
-                out.collect(orderDetail);
-            }
-        });
+        SingleOutputStreamOperator<JSONObject> orderDetailJsonObjDS = OrderDetailFilterFunction.getDwdOrderDetail(env, groupId);
 
         //TODO 6.提取时间戳生成WaterMark
         SingleOutputStreamOperator<JSONObject> jsonObjWithWmDS = orderDetailJsonObjDS.assignTimestampsAndWatermarks(WatermarkStrategy.<JSONObject>forBoundedOutOfOrderness(Duration.ofSeconds(2)).withTimestampAssigner(new SerializableTimestampAssigner<JSONObject>() {
