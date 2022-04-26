@@ -3,6 +3,9 @@ package com.atguigu.app.dws;
 import com.alibaba.fastjson.JSONObject;
 import com.atguigu.app.func.OrderDetailFilterFunction;
 import com.atguigu.bean.TradeTrademarkCategoryUserSpuOrderBean;
+import com.atguigu.utils.DimUtil;
+import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
@@ -44,6 +47,26 @@ public class DwsTradeTrademarkCategoryUserSpuOrderWindow {
         );
 
         //TODO 4.关联维表
+        skuUserOrderDS.map(new RichMapFunction<TradeTrademarkCategoryUserSpuOrderBean, TradeTrademarkCategoryUserSpuOrderBean>() {
+
+            @Override
+            public void open(Configuration parameters) throws Exception {
+                //创建连接
+            }
+
+            @Override
+            public TradeTrademarkCategoryUserSpuOrderBean map(TradeTrademarkCategoryUserSpuOrderBean value) throws Exception {
+
+                //查询SKU表
+                //DimUtil.getDimInfo(conn, "", value.getSkuId());
+
+                //查询SPU表
+
+                //... ...
+
+                return value;
+            }
+        });
 
         //TODO 5.提取时间戳生成WaterMark
 
