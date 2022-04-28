@@ -42,7 +42,9 @@ public abstract class DimAsyncFunction<T> extends RichAsyncFunction<T, T> implem
                 JSONObject dimInfo = DimUtil.getDimInfo(connection, tableName, getKey(input));
 
                 //2.将维表数据补充到JavaBean中
-                join(input, dimInfo);
+                if (dimInfo != null) {
+                    join(input, dimInfo);
+                }
 
                 //3.将补充之后的数据输出
                 resultFuture.complete(Collections.singletonList(input));

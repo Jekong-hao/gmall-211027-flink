@@ -19,6 +19,8 @@ public class TradeProvinceOrderWindow {
     // 省份名称
     @Builder.Default
     String provinceName = "";
+    @TransientSink
+    Set<String> orderIdSet;
     // 累计下单次数
     Long orderCount;
     // 累计下单金额

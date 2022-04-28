@@ -22,6 +22,7 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 public class DwsTradeTrademarkCategoryUserSpuOrderWindow {
@@ -53,14 +54,18 @@ public class DwsTradeTrademarkCategoryUserSpuOrderWindow {
         SingleOutputStreamOperator<JSONObject> orderDetailJsonObjDS = OrderDetailFilterFunction.getDwdOrderDetail(env, groupId);
 
         //TODO 3.转换数据为JavaBean
-        SingleOutputStreamOperator<TradeTrademarkCategoryUserSpuOrderBean> skuUserOrderDS = orderDetailJsonObjDS.map(json -> TradeTrademarkCategoryUserSpuOrderBean.builder()
-                .skuId(json.getString("sku_id"))
-                .userId(json.getString("user_id"))
-                .orderCount(1L)
-                .orderAmount(json.getDouble("split_total_amount"))
-                .ts(DateFormatUtil.toTs(json.getString("order_create_time"), true))
-                .build()
-        );
+        SingleOutputStreamOperator<TradeTrademarkCategoryUserSpuOrderBean> skuUserOrderDS = orderDetailJsonObjDS.map(json -> {
+            HashSet<String> orderIds = new HashSet<>();
+            orderIds.add(json.getString("order_id"));
+
+            return TradeTrademarkCategoryUserSpuOrderBean.builder()
+                    .skuId(json.getString("sku_id"))
+                    .userId(json.getString("user_id"))
+                    .orderIdSet(orderIds)
+                    .orderAmount(json.getDouble("split_total_amount"))
+                    .ts(DateFormatUtil.toTs(json.getString("order_create_time"), true))
+                    .build();
+        });
 
         //TODO 4.关联维表
 //        skuUserOrderDS.map(new RichMapFunction<TradeTrademarkCategoryUserSpuOrderBean, TradeTrademarkCategoryUserSpuOrderBean>() {
@@ -227,6 +232,7 @@ public class DwsTradeTrademarkCategoryUserSpuOrderWindow {
             public TradeTrademarkCategoryUserSpuOrderBean reduce(TradeTrademarkCategoryUserSpuOrderBean value1, TradeTrademarkCategoryUserSpuOrderBean value2) throws Exception {
                 value1.setOrderCount(value1.getOrderCount() + value2.getOrderCount());
                 value1.setOrderAmount(value1.getOrderAmount() + value2.getOrderAmount());
+                value1.getOrderIdSet().addAll(value2.getOrderIdSet());
                 return value1;
             }
         }, new WindowFunction<TradeTrademarkCategoryUserSpuOrderBean, TradeTrademarkCategoryUserSpuOrderBean, String, TimeWindow>() {
@@ -240,6 +246,8 @@ public class DwsTradeTrademarkCategoryUserSpuOrderWindow {
                 orderBean.setTs(System.currentTimeMillis());
                 orderBean.setEdt(DateFormatUtil.toYmdHms(window.getEnd()));
                 orderBean.setStt(DateFormatUtil.toYmdHms(window.getStart()));
+
+                orderBean.setOrderCount((long) orderBean.getOrderIdSet().size());
 
                 //输出数据
                 out.collect(orderBean);
