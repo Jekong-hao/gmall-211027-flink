@@ -5,9 +5,11 @@ import com.atguigu.bean.Bean2;
 
 import com.atguigu.utils.MyKafkaUtil;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
@@ -26,8 +28,18 @@ public class FlinkSQLJoinTest {
         System.out.println(tableEnv.getConfig().getIdleStateRetention());
         tableEnv.getConfig().setIdleStateRetention(Duration.ofSeconds(10));
 
+        FlinkKafkaConsumer<String> kafkaConsumer = MyKafkaUtil.getKafkaConsumer("", "");
+
+        //-host hadoop102 -port 8888
+        ParameterTool parameterTool = ParameterTool.fromArgs(args);
+        String host = parameterTool.get("host");
+        int port = parameterTool.getInt("port");
+
+        ParameterTool propertiesFile = ParameterTool.fromPropertiesFile("./");
+        String s = propertiesFile.get("");
+
         //读取数据创建流
-        SingleOutputStreamOperator<Bean1> bean1DS = env.socketTextStream("hadoop102", 8888)
+        SingleOutputStreamOperator<Bean1> bean1DS = env.socketTextStream(host, port)
                 .map(line -> {
                     String[] split = line.split(",");
                     return new Bean1(split[0],
