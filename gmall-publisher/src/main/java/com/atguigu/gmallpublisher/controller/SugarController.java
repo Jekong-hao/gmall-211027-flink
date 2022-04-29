@@ -1,6 +1,8 @@
 package com.atguigu.gmallpublisher.controller;
 
 import com.atguigu.gmallpublisher.service.GmvService;
+import com.atguigu.gmallpublisher.service.UvService;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.annotations.Select;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -11,6 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 //@Controller
 @RestController // = @Controller+@ResponseBody
@@ -19,6 +24,9 @@ public class SugarController {
 
     @Autowired
     private GmvService gmvService;
+
+    @Autowired
+    private UvService uvService;
 
     @RequestMapping("/test")
     //@ResponseBody
@@ -50,6 +58,39 @@ public class SugarController {
                 "  \"msg\": \"\"," +
                 "  \"data\": " + gmv +
                 "}";
+    }
+
+    @RequestMapping("/ch")
+    public String getUvByCh(@RequestParam(value = "date", defaultValue = "0") int date) {
+
+        if (date == 0) {
+            date = getToday();
+        }
+
+        //获取数据
+        Map uvByCh = uvService.getUvByCh(date);
+        Set chs = uvByCh.keySet();
+        Collection uvs = uvByCh.values();
+
+        //拼接JSON字符串并返回结果
+        return "{" +
+                "  \"status\": 0," +
+                "  \"msg\": \"\"," +
+                "  \"data\": {" +
+                "    \"categories\": [\"" +
+                StringUtils.join(chs, "\",\"") +
+                "\"]," +
+                "    \"series\": [" +
+                "      {" +
+                "        \"name\": \"日活\"," +
+                "        \"data\": [" +
+                StringUtils.join(uvs, ",") +
+                "]" +
+                "      }" +
+                "    ]" +
+                "  }" +
+                "}";
+
     }
 
     private int getToday() {
